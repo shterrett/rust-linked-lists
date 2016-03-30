@@ -24,6 +24,8 @@ impl<T> Node<T> {
     }
 }
 
+pub struct IntoIter<T>(List<T>);
+
 impl<T> List<T> {
     pub fn new() -> Self {
         List {
@@ -103,6 +105,23 @@ impl<T> List<T> {
             Rc::try_unwrap(old_tail).ok().unwrap().into_inner().elem
         })
     }
+
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self)
+    }
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<T> {
+        self.0.shift()
+    }
+}
+
+impl<T> DoubleEndedIterator for IntoIter<T> {
+    fn next_back(&mut self) -> Option<T> {
+        self.0.pop()
+    }
 }
 
 #[cfg(test)]
@@ -170,5 +189,35 @@ mod test {
 
         assert!(list.peek_head().is_none());
         assert!(list.peek_tail().is_none());
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut list = List::new();
+        list.push(1);
+        list.push(2);
+        list.push(3);
+        list.push(4);
+
+        let mut iter = list.into_iter();
+
+        assert_eq!(iter.next(), Some(1));
+        assert_eq!(iter.next_back(), Some(4));
+        assert_eq!(iter.next(), Some(2));
+        assert_eq!(iter.next_back(), Some(3));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next_back(), None);
+
+        let mut list_2 = List::new();
+
+        list_2.push(1);
+        list_2.push(2);
+        list_2.push(3);
+
+        let mut iter_rev = list_2.into_iter().rev();
+        assert_eq!(iter_rev.next(), Some(3));
+        assert_eq!(iter_rev.next(), Some(2));
+        assert_eq!(iter_rev.next(), Some(1));
+        assert_eq!(iter_rev.next(), None);
     }
 }
