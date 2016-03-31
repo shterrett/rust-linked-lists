@@ -11,11 +11,18 @@ pub fn map<A, B>(f: fn(&A) -> B, ref from: &List<A>) -> List<B> {
     }
 }
 
-
+pub fn reduce<A, B>(f: fn(B, &A) -> B, initial: B, ref from: &List<A>) -> B {
+    let mut iter = from.iter();
+    let mut accum = initial;
+    while let Some(next) = iter.next() {
+        accum = f(accum, &next)
+    }
+    accum
+}
 
 #[cfg(test)]
 mod test {
-  use super::map;
+  use super::{map, reduce};
   use third::List;
 
   fn add_one(&n: &i32) -> i32 {
@@ -24,6 +31,14 @@ mod test {
 
   fn to_s(&n: &i32) -> String {
       n.to_string()
+  }
+
+  fn sum(accum: i32, next: &i32) -> i32 {
+      accum + next
+  }
+
+  fn reverse(accum: List<i32>, next: &i32) -> List<i32> {
+      accum.append(*next)
   }
 
   #[test]
@@ -66,5 +81,41 @@ mod test {
       assert_eq!(old_iter.next(), Some(&2));
       assert_eq!(old_iter.next(), Some(&1));
       assert_eq!(old_iter.next(), None);
+  }
+
+  #[test]
+  fn sum_list() {
+      let list = List::new().append(1).append(2).append(3).append(4);
+
+      let total = reduce(sum, 0, &list);
+      assert_eq!(total, 10);
+
+      let mut iter = list.iter();
+      assert_eq!(iter.next(), Some(&4));
+      assert_eq!(iter.next(), Some(&3));
+      assert_eq!(iter.next(), Some(&2));
+      assert_eq!(iter.next(), Some(&1));
+      assert_eq!(iter.next(), None);
+  }
+
+  #[test]
+  fn reverse_list() {
+      let list = List::new().append(1).append(2).append(3).append(4);
+
+      let doubled = reduce(reverse, List::new(), &list);
+
+      let mut doubled_iter = doubled.iter();
+      assert_eq!(doubled_iter.next(), Some(&1));
+      assert_eq!(doubled_iter.next(), Some(&2));
+      assert_eq!(doubled_iter.next(), Some(&3));
+      assert_eq!(doubled_iter.next(), Some(&4));
+      assert_eq!(doubled_iter.next(), None);
+
+      let mut iter = list.iter();
+      assert_eq!(iter.next(), Some(&4));
+      assert_eq!(iter.next(), Some(&3));
+      assert_eq!(iter.next(), Some(&2));
+      assert_eq!(iter.next(), Some(&1));
+      assert_eq!(iter.next(), None);
   }
 }
